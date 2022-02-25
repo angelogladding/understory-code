@@ -19,7 +19,7 @@ app = web.application(
     __name__,
     db=True,
     prefix="code",
-    args={"project": r"[\w.-]+", "package": r"[\w.-]+"},
+    args={"project": r"[a-z0-9-]+", "package": r"[\w.-]+"},
     model={
         "projects": {
             "name": "TEXT UNIQUE",
@@ -69,6 +69,28 @@ class Code:
         project_dir.mkdir(exist_ok=True)
         warez.Repo(project_dir / name, init=True)
         return web.Created(app.view.project_created(name), f"/{name}")
+
+
+@app.control("{project}")
+class Project:
+    """Project index."""
+
+    def get(self):
+        """Return details about the project."""
+        return app.view.project(
+            self.project,
+            warez.Repo(project_dir / self.project),
+            web.tx.code.get_packages(self.project),
+        )
+
+
+@app.control("{project}/packages/{package}")
+class Package:
+    """Project package."""
+
+    def get(self):
+        """Return the package file."""
+        return package_dir / self.package
 
 
 @app.control("_pypi")
@@ -129,28 +151,6 @@ class PyPIProject:
         ):
             return app.view.pypi_project(self.project, packages)
         raise web.SeeOther(f"https://pypi.org/simple/{self.project}")
-
-
-@app.control("{project}")
-class Project:
-    """Project index."""
-
-    def get(self):
-        """Return details about the project."""
-        return app.view.project(
-            self.project,
-            warez.Repo(project_dir / self.project),
-            web.tx.code.get_packages(self.project),
-        )
-
-
-@app.control("{project}/packages/{package}")
-class Package:
-    """Project package."""
-
-    def get(self):
-        """Return the package file."""
-        return package_dir / self.package
 
 
 @app.model.control
