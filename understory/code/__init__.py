@@ -43,8 +43,8 @@ app = web.application(
     },
 )
 
-package_dir = pathlib.Path("packages")
 project_dir = pathlib.Path("projects")
+package_dir = pathlib.Path("packages")
 
 
 @app.wrap

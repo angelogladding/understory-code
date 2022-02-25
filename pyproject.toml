@@ -8,10 +8,10 @@ keywords = ["Understory", "Git", "PyPI"]
 homepage = "https://ragt.ag/code/understory-code"
 repository = "https://ragt.ag/code/understory-code.git"
 documentation = "https://ragt.ag/code/understory-code/docs"
-packages = [{include = "code"}]
+packages = [{include = "understory"}]
 
 [tool.poetry.plugins."understory"]
-code = "code:app"
+code = "understory.code:app"
 
 [tool.poetry.dependencies]
 python = "^3.9"
