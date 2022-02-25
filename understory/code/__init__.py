@@ -47,6 +47,57 @@ project_dir = Path("projects")
 package_dir = Path("packages")
 
 
+@app.model.control
+def create_project(db, name):
+    """Create a project."""
+    return db.insert("projects", name=name)
+
+
+@app.model.control
+def get_projects(db):
+    """Return a list of project names."""
+    return [r["name"] for r in db.select("projects", what="name", order="name")]
+
+
+@app.model.control
+def create_package(db, form):
+    """Create a project."""
+    try:
+        project_id = db.insert("projects", name=form.name)
+    except db.IntegrityError:
+        project_id = db.select(
+            "projects", what="rowid, name", where="name = ?", vals=[form.name]
+        )[0]["rowid"]
+    return db.insert(
+        "packages",
+        project_id=project_id,
+        filename=form.content.fileobj.filename,
+        author=form.author,
+        author_email=form.author_email,
+        # classifiers=form.classifiers,
+        home_page=form.home_page,
+        # keywords=form.keywords.split(","),
+        license=form.license,
+        # project_urls=form.project_urls if "project_urls" in form else [],
+        # requires_dist=form.requires_dist,
+        requires_python=form.requires_python,
+        sha256_digest=form.sha256_digest,
+        summary=form.summary,
+        version=form.version,
+    )
+
+
+@app.model.control
+def get_packages(db, project):
+    """Return a list of packages for given project."""
+    return db.select(
+        "packages",
+        join="""projects ON packages.project_id = projects.rowid""",
+        where="projects.name = ?",
+        vals=[project],
+    )
+
+
 @app.wrap
 def connect_model(handler, main_app):
     """Connect the model to the current transaction."""
@@ -65,7 +116,7 @@ class Code:
     def post(self):
         """Create a project."""
         name = web.form("name").name
-        web.tx.db.insert("projects", name=name)
+        web.tx.code.create_project(name)
         project_dir.mkdir(exist_ok=True)
         warez.Repo(project_dir / name, init=True)
         return web.Created(app.view.project_created(name), f"/{name}")
@@ -75,12 +126,12 @@ class Code:
 class Project:
     """Project index."""
 
-    def get(self):
+    def get(self, project):
         """Return details about the project."""
         return app.view.project(
-            self.project,
-            warez.Repo(project_dir / self.project),
-            web.tx.code.get_packages(self.project),
+            project,
+            warez.Repo(project_dir / project),
+            web.tx.code.get_packages(project),
         )
 
 
@@ -88,9 +139,9 @@ class Project:
 class Package:
     """Project package."""
 
-    def get(self):
+    def get(self, project, package):
         """Return the package file."""
-        return package_dir / self.package
+        return package_dir / package
 
 
 @app.control("_pypi")
@@ -106,34 +157,11 @@ class PyPIIndex:
         form = web.form(":action")
         if form[":action"] != "file_upload":
             raise web.BadRequest(f"Provided `:action={form[':action']}` not supported.")
-        try:
-            project_id = web.tx.db.insert("projects", name=form.name)
-        except web.tx.db.IntegrityError:
-            project_id = web.tx.db.select(
-                "projects", what="rowid, name", where="name = ?", vals=[form.name]
-            )[0]["rowid"]
-        filename = form.content.fileobj.filename
-        web.tx.db.insert(
-            "packages",
-            project_id=project_id,
-            filename=filename,
-            author=form.author,
-            author_email=form.author_email,
-            # classifiers=form.classifiers,
-            home_page=form.home_page,
-            # keywords=form.keywords.split(","),
-            license=form.license,
-            # project_urls=form.project_urls if "project_urls" in form else [],
-            # requires_dist=form.requires_dist,
-            requires_python=form.requires_python,
-            sha256_digest=form.sha256_digest,
-            summary=form.summary,
-            version=form.version,
-        )
+        web.tx.code.create_package(form)
         form.content.save(file_dir=package_dir)
         raise web.Created(
-            f"Package `{filename}` has been uploaded.",
-            "/{form.name}/packages/{filename}",
+            "Package has been uploaded.",
+            "/{form.name}/packages/{form.content.fileobj.filename}",
         )
 
 
@@ -141,30 +169,8 @@ class PyPIIndex:
 class PyPIProject:
     """PyPI project in Simple Repository format."""
 
-    def get(self):
+    def get(self, project):
         """Return a simplified list of the project's packages."""
-        if packages := web.tx.db.select(
-            "packages",
-            join="""projects ON packages.project_id = projects.rowid""",
-            where="projects.name = ?",
-            vals=[self.project],
-        ):
-            return app.view.pypi_project(self.project, packages)
-        raise web.SeeOther(f"https://pypi.org/simple/{self.project}")
-
-
-@app.model.control
-def get_projects(db):
-    """Return a list of project names."""
-    return [r["name"] for r in db.select("projects", what="name", order="name")]
-
-
-@app.model.control
-def get_packages(db, project):
-    """Return a list of packages for given project."""
-    return web.tx.db.select(
-        "packages",
-        join="""projects ON packages.project_id = projects.rowid""",
-        where="projects.name = ?",
-        vals=[project],
-    )
+        if packages := web.tx.code.get_packages(project):
+            return app.view.pypi_project(project, packages)
+        raise web.SeeOther(f"https://pypi.org/simple/{project}")

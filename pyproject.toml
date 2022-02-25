@@ -15,7 +15,7 @@ code = "understory.code:app"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-understory = "^0.0.134"
+understory = "^0.0.150"
 warez = "^0.0.9"
 
 [tool.poetry.dev-dependencies]
