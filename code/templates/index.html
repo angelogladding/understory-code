@@ -1,0 +1,11 @@
+$def with (projects)
+$var title: Code
+<ul>
+$for project in projects:
+    <li><a href="/$project">$project</a></li>
+</ul>
+
+<form method=post action=/>
+<input name=name type=text>
+<button>Create</button>
+</form>

@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "understory-code"
+version = "0.0.6"
+description = "Host code in the understory"
+authors = ["Angelo Gladding <angelo@ragt.ag>"]
+license = "AGPL-3.0-or-later"
+keywords = ["Understory", "Git", "PyPI"]
+homepage = "https://ragt.ag/code/understory-code"
+repository = "https://ragt.ag/code/understory-code.git"
+documentation = "https://ragt.ag/code/understory-code/docs"
+packages = [{include = "code"}]
+
+[tool.poetry.plugins."understory"]
+code = "code:app"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+understory = "^0.0.134"
+warez = "^0.0.9"
+
+[tool.poetry.dev-dependencies]
+
+[[tool.poetry.source]]
+name = "main"
+url = "http://localhost:8080/_pypi"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

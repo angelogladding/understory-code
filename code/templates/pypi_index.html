@@ -1,0 +1,6 @@
+$def with (projects)
+$var title: PyPI Repository
+<ul>
+$for project in projects:
+    <li><a href=/_pypi/$project>$project</a></li>
+</ul>

@@ -1,0 +1,4 @@
+$def with (project, packages)
+$var title: Links for $project
+$for package in packages:
+    <a href="/$package['name']/packages/$package['filename']#sha256=$package['sha256_digest']">$package['filename']</a><br>
