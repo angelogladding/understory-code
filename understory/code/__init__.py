@@ -10,7 +10,7 @@ Host code in the understory.
 # TODO PEP 592 -- Adding "Yank" Support to the Simple API
 # TODO PEP 658 -- Serve Distribution Metadata in the Simple Repository API
 
-import pathlib
+from pathlib import Path
 
 import warez
 import web
@@ -43,8 +43,8 @@ app = web.application(
     },
 )
 
-project_dir = pathlib.Path("projects")
-package_dir = pathlib.Path("packages")
+project_dir = Path("projects")
+package_dir = Path("packages")
 
 
 @app.wrap
@@ -76,7 +76,7 @@ class PyPIIndex:
     """PyPI repository in Simple Repository format."""
 
     def get(self):
-        """"""
+        """Return a simplified list of the repository's projects."""
         return app.view.pypi_index(web.tx.code.get_projects())
 
     def post(self):
@@ -84,7 +84,6 @@ class PyPIIndex:
         form = web.form(":action")
         if form[":action"] != "file_upload":
             raise web.BadRequest(f"Provided `:action={form[':action']}` not supported.")
-        # TODO reject if not already created
         try:
             project_id = web.tx.db.insert("projects", name=form.name)
         except web.tx.db.IntegrityError:
